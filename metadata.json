@@ -1,0 +1,6 @@
+{
+  "name": "Autotopi",
+  "description": "Premium Bangladeshi Automotive TV Show and Media Platform featuring letest automotive news, video reviews, and professional services.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

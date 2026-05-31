@@ -1,0 +1,133 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global catch-all to block all unspecified paths
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Reusable core security functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn() &&
+             (request.auth.token.email == 'tasadddikahanafdre.dev@gmail.com' || request.auth.token.email == 'tasaddikahanafdre.dev@gmail.com') &&
+             request.auth.token.email_verified == true;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // Document validation schemas
+    function isValidBanner(data) {
+      return data.keys().hasAll(['id', 'imageUrl', 'title', 'subtitle', 'ctaText', 'ctaLink']) &&
+             data.keys().size() == 6 &&
+             data.id is string && data.id.size() <= 128 &&
+             data.imageUrl is string && data.imageUrl.size() <= 2000 &&
+             data.title is string && data.title.size() <= 500 &&
+             data.subtitle is string && data.subtitle.size() <= 2000 &&
+             data.ctaText is string && data.ctaText.size() <= 128 &&
+             data.ctaLink is string && data.ctaLink.size() <= 128;
+    }
+
+    function isValidNews(data) {
+      return data.keys().hasAll(['id', 'title', 'excerpt', 'content', 'category', 'imageUrl', 'publishDate', 'author']) &&
+             data.keys().size() == 8 &&
+             data.id is string && data.id.size() <= 128 &&
+             data.title is string && data.title.size() <= 500 &&
+             data.excerpt is string && data.excerpt.size() <= 1000 &&
+             data.content is string && data.content.size() <= 500000 &&
+             data.category is string && data.category.size() <= 128 &&
+             data.imageUrl is string && data.imageUrl.size() <= 2000 &&
+             data.publishDate is string && data.publishDate.size() <= 128 &&
+             data.author is string && data.author.size() <= 200;
+    }
+
+    function isValidVideo(data) {
+      return data.keys().hasAll(['id', 'title', 'description', 'youtubeUrl', 'youtubeId', 'publishDate']) &&
+             data.keys().size() == 6 &&
+             data.id is string && data.id.size() <= 128 &&
+             data.title is string && data.title.size() <= 500 &&
+             data.description is string && data.description.size() <= 2000 &&
+             data.youtubeUrl is string && data.youtubeUrl.size() <= 1000 &&
+             data.youtubeId is string && data.youtubeId.size() <= 128 &&
+             data.publishDate is string && data.publishDate.size() <= 128;
+    }
+
+    function isValidMessage(data) {
+      return data.keys().hasAll(['id', 'name', 'email', 'phone', 'subject', 'message', 'status', 'createdAt']) &&
+             data.keys().size() == 8 &&
+             data.id is string && data.id.size() <= 128 &&
+             data.name is string && data.name.size() <= 200 &&
+             data.email is string && data.email.size() <= 320 &&
+             data.phone is string && data.phone.size() <= 64 &&
+             data.subject is string && data.subject.size() <= 500 &&
+             data.message is string && data.message.size() <= 20000 &&
+             data.status in ['pending', 'completed'] &&
+             data.createdAt is string && data.createdAt.size() <= 128;
+    }
+
+    function isValidSettings(data) {
+      return data.keys().hasAll(['logoText', 'tagline', 'address', 'helpline', 'email', 'youtubeUrl', 'facebookUrl', 'instagramUrl', 'copyright']) &&
+             data.keys().size() == 9 &&
+             data.logoText is string && data.logoText.size() <= 128 &&
+             data.tagline is string && data.tagline.size() <= 500 &&
+             data.address is string && data.address.size() <= 1000 &&
+             data.helpline is string && data.helpline.size() <= 128 &&
+             data.email is string && data.email.size() <= 320 &&
+             data.youtubeUrl is string && data.youtubeUrl.size() <= 1000 &&
+             data.facebookUrl is string && data.facebookUrl.size() <= 1000 &&
+             data.instagramUrl is string && data.instagramUrl.size() <= 1000 &&
+             data.copyright is string && data.copyright.size() <= 500;
+    }
+
+    function isValidNotification(data) {
+      return data.keys().hasAll(['id', 'title', 'text', 'type', 'createdAt']) &&
+             data.keys().size() == 5 &&
+             data.id is string && data.id.size() <= 128 &&
+             data.title is string && data.title.size() <= 500 &&
+             data.text is string && data.text.size() <= 2000 &&
+             data.type is string && data.type.size() <= 128 &&
+             data.createdAt is string && data.createdAt.size() <= 128;
+    }
+
+    // Rules for each specific collection path
+    match /banners/{bannerId} {
+      allow read: if true;
+      allow create, delete: if isAdmin() && isValidId(bannerId) && isValidBanner(request.resource.data);
+      allow update: if isAdmin() && isValidId(bannerId) && isValidBanner(request.resource.data) && request.resource.data.id == resource.data.id;
+    }
+
+    match /news/{postId} {
+      allow read: if true;
+      allow create, delete: if isAdmin() && isValidId(postId) && isValidNews(request.resource.data);
+      allow update: if isAdmin() && isValidId(postId) && isValidNews(request.resource.data) && request.resource.data.id == resource.data.id;
+    }
+
+    match /videos/{videoId} {
+      allow read: if true;
+      allow create, delete: if isAdmin() && isValidId(videoId) && isValidVideo(request.resource.data);
+      allow update: if isAdmin() && isValidId(videoId) && isValidVideo(request.resource.data) && request.resource.data.id == resource.data.id;
+    }
+
+    match /messages/{messageId} {
+      allow create: if isValidId(messageId) && isValidMessage(request.resource.data);
+      allow read, delete: if isAdmin() && isValidId(messageId);
+      allow update: if isAdmin() && isValidId(messageId) && isValidMessage(request.resource.data) && request.resource.data.id == resource.data.id;
+    }
+
+    match /settings/{docId} {
+      allow read: if true;
+      allow write: if isAdmin() && isValidId(docId) && isValidSettings(request.resource.data);
+    }
+
+    match /notifications/{notificationId} {
+      allow read: if true;
+      allow create, delete: if isAdmin() && isValidId(notificationId) && isValidNotification(request.resource.data);
+      allow update: if isAdmin() && isValidId(notificationId) && isValidNotification(request.resource.data) && request.resource.data.id == resource.data.id;
+    }
+  }
+}
